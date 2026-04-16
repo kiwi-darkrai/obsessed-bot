@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from "fs";
 export default {
     adminOnly: true,
     execute: async (conn, m, from, args, db) => {

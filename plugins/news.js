@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from "axios";
 
 export default {
     execute: async (conn, m, from, args) => {

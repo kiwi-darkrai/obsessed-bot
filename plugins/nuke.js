@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from "fs";
 
 // Funzione per creare un ritardo (ms)
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));

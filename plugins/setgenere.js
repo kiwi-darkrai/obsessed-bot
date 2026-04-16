@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from "fs";
 export default {
     execute: async (conn, m, from, args, db, sender) => {
         const gen = args[0]?.toLowerCase();
