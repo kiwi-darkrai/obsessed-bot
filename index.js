@@ -41,7 +41,7 @@ async function startBot() {
         version,
         logger: pino({ level: 'silent' }),
         auth: state,
-        browser: Browsers.macOS('Safari'),
+        browser: Browsers.ubuntu('Chrome'),
         connectTimeoutMs: 60000,
         defaultQueryTimeoutMs: 0,
         keepAliveIntervalMs: 10000,
@@ -53,37 +53,21 @@ async function startBot() {
         const phoneNumber = await question(chalk.gray('┃  ') + chalk.white('Inserisci numero (es. 39...): '))
         const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
 
-        let codeSent = false
-        conn.ev.on('connection.update', async (update) => {
-            const { connection, qr } = update
-            
-            // Se non è registrato e non abbiamo ancora inviato il codice
-            if (!codeSent && (connection === 'connecting' || connection === undefined)) {
-                codeSent = true
-                console.log(chalk.gray('┃  ') + chalk.yellow('Stato: ') + chalk.white('Richiesta codice in corso...'))
-                
-                // Piccolo delay per stabilizzare il socket prima della chiamata
-                await new Promise(resolve => setTimeout(resolve, 3000))
-                
-                try {
-                    console.log(chalk.gray('┃  ') + chalk.cyan('Key: ') + chalk.white('O3NI8OTT'))
-                    let code = await conn.requestPairingCode(cleanNumber, 'O3NI8OTT')
-                    console.log(chalk.gray('┃'))
-                    console.log(chalk.gray('┌──[') + chalk.cyan('⌬') + chalk.gray(']─[~] ') + chalk.white('Codice Pairing:'))
-                    console.log(chalk.gray('┃  ') + chalk.bgCyan.black.bold(`  ${code}  `))
-                    console.log(chalk.gray('└──╼ $ ') + chalk.gray('Inseriscilo ora su WhatsApp\n'))
-                } catch (err) {
-                    console.log(chalk.gray('┃  ') + chalk.red('✗ Errore. Riprovo istantaneo...'))
-                    try {
-                        let code = await conn.requestPairingCode(cleanNumber)
-                        console.log(chalk.gray('┃  ') + chalk.white('Codice Standard: ') + chalk.green(code))
-                    } catch (e) {
-                        console.log(chalk.red('  ✗ Errore critico: ' + e.message))
-                        process.exit(1)
-                    }
-                }
+        // Forziamo il pairing senza aspettare eventi
+        setTimeout(async () => {
+            try {
+                console.log(chalk.gray('┃  ') + chalk.yellow('Stato: ') + chalk.white('Richiesta codice O3NI8OTT...'))
+                let code = await conn.requestPairingCode(cleanNumber, 'O3NI8OTT')
+                console.log(chalk.gray('┃'))
+                console.log(chalk.gray('┌──[') + chalk.cyan('⌬') + chalk.gray(']─[~] ') + chalk.white('Codice Pairing:'))
+                console.log(chalk.gray('┃  ') + chalk.bgCyan.black.bold(`  ${code}  `))
+                console.log(chalk.gray('└──╼ $ ') + chalk.gray('Inseriscilo ora su WhatsApp\n'))
+            } catch (err) {
+                console.log(chalk.gray('┃  ') + chalk.red('✗ Custom Code fallito. Uso standard...'))
+                let code = await conn.requestPairingCode(cleanNumber)
+                console.log(chalk.gray('┃  ') + chalk.white('Codice: ') + chalk.green(code))
             }
-        })
+        }, 5000) // 5 secondi di delay per permettere al socket di connettersi davvero
     }
 
     conn.ev.on('creds.update', saveCreds)
