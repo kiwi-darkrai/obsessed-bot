@@ -3,13 +3,11 @@ const {
     default: makeWASocket,
     useMultiFileAuthState,
     fetchLatestBaileysVersion,
-    makeCacheableSignalKeyStore,
     DisconnectReason,
     Browsers
 } = pkg
 import pino from 'pino'
 import fs from 'fs'
-import path from 'path'
 import chalk from 'chalk'
 import readline from 'readline'
 
@@ -40,57 +38,47 @@ async function startBot() {
         auth: state,
         browser: Browsers.ubuntu('Chrome'),
         connectTimeoutMs: 60000,
-        defaultQueryTimeoutMs: 0,
-        keepAliveIntervalMs: 10000,
     })
 
     if (!state.creds.registered) {
         printBanner()
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+        
         console.log(chalk.gray('┌──[') + chalk.cyan('⌬') + chalk.gray(']─[~] ') + chalk.white('Configurazione Pairing'))
         
-        const phoneNumber = await new Promise((resolve) => {
-            rl.question(chalk.gray('┃  ') + chalk.white('Inserisci numero (es. 39...): '), (answer) => {
-                rl.close() // <--- FONDAMENTALE: Chiude l'input subito
-                resolve(answer)
-            })
+        const num = await new Promise(resolve => {
+            rl.question(chalk.gray('┃  ') + chalk.white('Inserisci numero: '), resolve)
         })
+        
+        rl.close()
+        const cleanNumber = num.replace(/[^0-9]/g, '')
+        
+        console.log(chalk.gray('┃  ') + chalk.yellow('Stato: ') + chalk.white('Connessione in corso...'))
 
-        const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
-        
-        // Aspetta un momento che il socket sia pronto
-        console.log(chalk.gray('┃  ') + chalk.yellow('Stato: ') + chalk.white('Inizializzazione...'))
-        
+        // TRUCCO: Aspettiamo l'evento 'creds.update' o un timer per essere sicuri che il socket sia pronto
         setTimeout(async () => {
             try {
-                console.log(chalk.gray('┃  ') + chalk.cyan('Richiesta Key: ') + chalk.white('O3NI8OTT'))
-                let code = await conn.requestPairingCode(cleanNumber, 'O3NI8OTT')
+                console.log(chalk.gray('┃  ') + chalk.cyan('Richiesta: ') + chalk.white('O3NI8OTT'))
+                const code = await conn.requestPairingCode(cleanNumber, 'O3NI8OTT')
                 console.log(chalk.gray('┃'))
                 console.log(chalk.gray('┌──[') + chalk.cyan('⌬') + chalk.gray(']─[~] ') + chalk.white('Codice Pairing:'))
                 console.log(chalk.gray('┃  ') + chalk.bgCyan.black.bold(`  ${code}  `))
                 console.log(chalk.gray('└──╼ $ ') + chalk.gray('Inseriscilo ora su WhatsApp\n'))
-            } catch (err) {
-                console.log(chalk.gray('┃  ') + chalk.red('✗ Errore. Provo codice standard...'))
-                try {
-                    let code = await conn.requestPairingCode(cleanNumber)
-                    console.log(chalk.gray('┃  ') + chalk.white('Codice: ') + chalk.green(code))
-                } catch (e) { console.log(chalk.red('Errore critico: ' + e.message)) }
+            } catch (e) {
+                console.log(chalk.gray('┃  ') + chalk.red('✗ Fallito. Provo standard...'))
+                const code = await conn.requestPairingCode(cleanNumber)
+                console.log(chalk.gray('┃  ') + chalk.green('Codice: ' + code))
             }
-        }, 8000) // 8 secondi di sicurezza
+        }, 10000) // 10 secondi pieni. Non avere fretta, serve a stabilizzare il tunnel TCP.
     }
 
     conn.ev.on('creds.update', saveCreds)
-
-    conn.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update
-        if (connection === 'open') {
+    conn.ev.on('connection.update', (u) => {
+        if (u.connection === 'open') {
             printBanner()
             console.log(chalk.green('✓ ꪶ ⌬ ꫂ | ʙᴏᴛ ONLINE!\n'))
         }
-        if (connection === 'close') {
-            const reason = lastDisconnect?.error?.output?.statusCode
-            if (reason !== DisconnectReason.loggedOut) startBot()
-        }
+        if (u.connection === 'close' && u.lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) startBot()
     })
 }
 

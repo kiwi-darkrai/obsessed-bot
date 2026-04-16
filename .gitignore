@@ -1,5 +1,7 @@
 node_modules
 sessione
+auth_info_baileys
 database.json
 .npm
 package-lock.json
+*.sh
