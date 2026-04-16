@@ -1,11 +1,11 @@
 const fs = require('fs');
-module.exports = {
-    execute: async (sock, mek, from, args, db) => {
+export default {
+    execute: async (conn, m, from, args, db) => {
         const text = args.join(" ");
-        if (!text) return sock.sendMessage(from, { text: "｢ ❓ ｣ Esempio: `.setwelcome Ciao @user, benvenuto in @group`" });
+        if (!text) return conn.sendMessage(from, { text: "｢ ❓ ｣ Esempio: `.setwelcome Ciao @user, benvenuto in @group`" });
         db.welcome = text;
         fs.writeFileSync('./database.json', JSON.stringify(db, null, 2));
-        sock.sendMessage(from, { text: "｢ ✅ ｣ Messaggio di Benvenuto salvato!" });
+        conn.sendMessage(from, { text: "｢ ✅ ｣ Messaggio di Benvenuto salvato!" });
     }
 };
 

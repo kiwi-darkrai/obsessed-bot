@@ -1,7 +1,7 @@
-module.exports = {
-    execute: async (sock, mek, from, args) => {
-        const groupMetadata = await sock.groupMetadata(from);
-        sock.sendMessage(from, { 
+export default {
+    execute: async (conn, m, from, args) => {
+        const groupMetadata = await conn.groupMetadata(from);
+        conn.sendMessage(from, { 
             text: args.join(" ") || "Avviso di sistema.", 
             mentions: groupMetadata.participants.map(a => a.id) 
         });

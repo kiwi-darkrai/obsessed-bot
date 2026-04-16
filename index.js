@@ -1,153 +1,148 @@
-const { 
-    default: makeWASocket, 
-    useMultiFileAuthState, 
-    fetchLatestBaileysVersion, 
-    DisconnectReason 
-} = require("@whiskeysockets/baileys");
-const pino = require('pino');
-const fs = require('fs');
-const path = require('path');
-const { Boom } = require('@hapi/boom');
+import pkg from '@realvare/baileys'
+const {
+    default: makeWASocket,
+    useMultiFileAuthState,
+    fetchLatestBaileysVersion,
+    makeCacheableSignalKeyStore,
+    DisconnectReason,
+    Browsers
+} = pkg
 
-// --- CONFIGURAZIONE UI & COLORI ---
-const chalk = {
-    green: (t) => `\x1b[32m${t}\x1b[0m`,
-    blue: (t) => `\x1b[34m${t}\x1b[0m`,
-    red: (t) => `\x1b[31m${t}\x1b[0m`,
-    yellow: (t) => `\x1b[33m${t}\x1b[0m`,
-    cyan: (t) => `\x1b[36m${t}\x1b[0m`,
-    magenta: (t) => `\x1b[35m${t}\x1b[0m`,
-    bold: (t) => `\x1b[1m${t}\x1b[22m`
-};
+import pino from 'pino'
+import fs from 'fs'
+import path from 'path'
+import chalk from 'chalk'
+import readline from 'readline'
+import { pathToFileURL } from 'url'
 
-const dbPath = './database.json';
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+const question = (text) => new Promise((resolve) => { process.stdout.write(text); rl.question('', resolve) })
 
-// --- CARICAMENTO LOGICA EVENTI ESTERNA ---
-const groupUpdate = require('./eventi/group_update');
-
-async function startBot() {
-    const { state, saveCreds } = await useMultiFileAuthState('./sessione');
-    const { version } = await fetchLatestBaileysVersion();
-    
-    // UI STARTUP - HACKER STYLE
-    console.clear();
-    console.log(chalk.cyan(`
-    
-          .  ___________________________  .
-          . [                           ] .
-          . [      ꪶ  █████████  ꫂ      ] .
-          . [      ███       ███      ] .
-          . [    ███    ⌬    ███    ] .
-          . [      ███       ███      ] .
-          . [      ꪶ  █████████  ꫂ      ] .
-          . [___________________________] .
-          .  .  .  .  .  .  .  .  .  .  .
-
-        ꪶ ⌬ ꫂ | ʙᴏᴛ - ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ ᴍʀ. ᴋɪᴡɪ
-    `));
-    console.log(chalk.green(`[ SYSTEM ] Avvio del kernel in corso...`));
-    console.log(chalk.cyan(`[ VERSION ] Baileys v${version.join('.')}\n`));
-
-    const sock = makeWASocket({
-        version,
-        logger: pino({ level: 'silent' }),
-        auth: state,
-        printQRInTerminal: false,
-        browser: ["ꪶ ⌬ ꫂ | ʙᴏᴛ", "Linux", "3.0.0"]
-    });
-
-    // --- PAIRING CODE CONFIG ---
-    if (!sock.authState.creds.registered) {
-        console.log(chalk.yellow(`[ AUTH ] Numero non registrato. Inserisci il numero (es: 39333...):`));
-        const phoneNumber = await new Promise(resolve => {
-            process.stdin.once('data', data => resolve(data.toString().trim()));
-        });
-        setTimeout(async () => {
-            let code = await sock.requestPairingCode(phoneNumber);
-            console.log(chalk.bold(chalk.green(`\n[ PAIRING CODE ] » ${code}\n`)));
-        }, 3000);
-    }
-
-    sock.ev.on('creds.update', saveCreds);
-
-    // --- GESTIONE EVENTI GRUPPO (WELCOME/BYE) ---
-    sock.ev.on('group-participants.update', async (anu) => {
-        await groupUpdate(sock, anu);
-    });
-
-    // --- GESTIONE MESSAGGI & COMANDI ---
-    sock.ev.on('messages.upsert', async chatUpdate => {
-        const mek = chatUpdate.messages[0];
-        if (!mek.message || mek.key.fromMe) return;
-
-        const from = mek.key.remoteJid;
-        const sender = mek.key.participant || mek.key.remoteJid;
-        const isGroup = from.endsWith('@g.us');
-        const type = Object.keys(mek.message)[0];
-        
-        // Estrazione testo migliorata
-        const body = (type === 'conversation') ? mek.message.conversation : 
-                     (type === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : 
-                     (type === 'imageMessage') ? mek.message.imageMessage.caption : 
-                     (type === 'videoMessage') ? mek.message.videoMessage.caption : '';
-        
-        const db = JSON.parse(fs.readFileSync(dbPath));
-        const isOwner = db.owners.includes(sender);
-
-        // LOG MESSAGGI UI
-        const time = new Date().toLocaleTimeString();
-        let role = chalk.blue('[ USER ]');
-        if (isOwner) role = chalk.red('[ OWNER ]');
-        else if (isGroup) {
-            try {
-                const groupMetadata = await sock.groupMetadata(from);
-                const groupAdmins = groupMetadata.participants.filter(v => v.admin !== null).map(v => v.id);
-                if (groupAdmins.includes(sender)) role = chalk.yellow('[ ADMIN ]');
-            } catch (e) {}
-        }
-
-        console.log(`${chalk.magenta(`[${time}]`)} ${role} ${chalk.green(mek.pushName || 'User')}: ${chalk.bold(body)}`);
-
-        // ESECUZIONE COMANDI
-        if (!body.startsWith('.')) return;
-        const command = body.slice(1).trim().split(/ +/).shift().toLowerCase();
-        const args = body.trim().split(/ +/).slice(1);
-
-        const pluginPath = path.join(__dirname, 'plugins', `${command}.js`);
-        if (fs.existsSync(pluginPath)) {
-            const plugin = require(pluginPath);
-            try {
-                // Esecuzione
-                await plugin.execute(sock, mek, from, args, db, sender);
-                
-                // --- AGGIORNAMENTO BIO & DATABASE ---
-                db.totalCommands = (db.totalCommands || 0) + 1;
-                fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-                
-                const bioStatus = `ꪶ ⌬ ꫂ | Comandi: ${db.totalCommands} | Dev: Mr. Kiwi 🥝`;
-                await sock.updateProfileStatus(bioStatus);
-                
-                console.log(chalk.green(`[ CMD ] .${command} eseguito correttamente.`));
-            } catch (e) { 
-                console.error(chalk.red(`[ ERR ] Errore nel comando .${command}:`), e); 
-            }
-        }
-    });
-
-    // --- GESTIONE CONNESSIONE ---
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update;
-        if (connection === 'close') {
-            const shouldReconnect = (lastDisconnect.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log(chalk.red('[ SYSTEM ] Connessione persa. Riconnessione:'), shouldReconnect);
-            if (shouldReconnect) startBot();
-        } else if (connection === 'open') {
-            console.log(chalk.green('\n' + '─'.repeat(40)));
-            console.log(chalk.bold(chalk.green('    ꪶ ⌬ ꫂ | SYSTEM ONLINE')));
-            console.log(chalk.green('─'.repeat(40) + '\n'));
-        }
-    });
+// Caricamento database
+const dbPath = './database.json'
+if (!fs.existsSync(dbPath)) {
+    fs.writeFileSync(dbPath, JSON.stringify({ owners: ["27833368862@s.whatsapp.net"], totalCommands: 0 }, null, 2))
 }
 
-startBot();
+const printBanner = () => {
+    console.clear()
+    console.log(chalk.red([
+        '',
+        '███╗   ██╗██╗██╗  ██╗ █████╗ ██████╗  ██████╗ ████████╗',
+        '████╗  ██║██║██║ ██╔╝██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝',
+        '██╔██╗ ██║██║█████╔╝ ███████║██████╔╝██║   ██║   ██║   ',
+        '██║╚██╗██║██║██╔═██╗ ██╔══██║██╔══██╗██║   ██║   ██║   ',
+        '██║ ╚████║██║██║  ██╗██║  ██║██████╔╝╚██████╔╝   ██║   ',
+        '╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝    ╚═╝   ',
+        '',
+        '                              by Mr.Kiwi',
+    ].join('\n')))
+    console.log(chalk.gray('┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓'))
+    console.log(chalk.gray('┃') + chalk.white('  ꪶ ⌬ ꫂ | ʙᴏᴛ • Realvare Engine • by Mr.Kiwi    ') + chalk.gray('┃'))
+    console.log(chalk.gray('┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n'))
+}
+
+async function startBot() {
+    const authFolder = './sessione'
+    const { state, saveCreds } = await useMultiFileAuthState(authFolder)
+    const { version } = await fetchLatestBaileysVersion()
+
+    const conn = makeWASocket({
+        version,
+        logger: pino({ level: 'silent' }),
+        printQRInTerminal: false,
+        auth: {
+            creds: state.creds,
+            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
+        },
+        browser: Browsers.macOS('Safari'),
+        syncFullHistory: false,
+        connectTimeoutMs: 60000,
+    })
+
+    if (!state.creds.registered && !fs.existsSync(path.join(authFolder, 'creds.json'))) {
+        printBanner()
+        console.log(chalk.gray('┌──[') + chalk.red('⌬') + chalk.gray(']─[~] ') + chalk.white('Scegli connessione:'))
+        console.log(chalk.gray('┃  [ 1 ] QR Code\n┃  [ 2 ] Pairing Code'))
+        const opzione = await question(chalk.gray('└──╼ $ ') + chalk.white('Scelta: '))
+
+        if (opzione === '2') {
+            const num = await question(chalk.gray('┌──[') + chalk.red('⌬') + chalk.gray(']─[~]\n└──╼ $ ') + chalk.white('Numero (es. 39...): '))
+            const cleanNum = num.replace(/[^0-9]/g, '')
+            
+            setTimeout(async () => {
+                try {
+                    let code = await conn.requestPairingCode(cleanNum)
+                    const fmt = code?.match(/.{1,4}/g)?.join('-') || code
+                    console.log()
+                    console.log(chalk.gray('┌──[') + chalk.red('⌬') + chalk.gray(']─[~] ') + chalk.white('Codice:'))
+                    console.log(chalk.gray('┃  ') + chalk.bgRed.white.bold('  ' + fmt + '  '))
+                    console.log(chalk.gray('└──╼ $ ') + chalk.gray('Inseriscilo su WhatsApp'))
+                } catch (e) { console.log(chalk.red('  ✗ Errore pairing: ' + e.message)) }
+            }, 3000)
+        }
+    }
+
+    conn.ev.on('creds.update', saveCreds)
+
+    // Caricamento plugin (ESM)
+    const pluginsFolder = path.join(process.cwd(), 'plugins')
+    global.plugins = {}
+    if (fs.existsSync(pluginsFolder)) {
+        const files = fs.readdirSync(pluginsFolder).filter(f => f.endsWith('.js'))
+        for (let file of files) {
+            try {
+                const pluginPath = pathToFileURL(path.join(pluginsFolder, file)).href
+                const plugin = await import(pluginPath + '?v=' + Date.now())
+                global.plugins[file] = plugin.default || plugin
+            } catch (e) { console.log(chalk.red(`  ✗ [${file}]: ${e.message}`)) }
+        }
+    }
+
+    conn.ev.on('messages.upsert', async (chatUpdate) => {
+        const m = chatUpdate.messages[0]
+        if (!m.message || m.key.fromMe) return
+        
+        const from = m.key.remoteJid
+        const sender = m.key.participant || from
+        const body = m.message.conversation || m.message.extendedTextMessage?.text || ""
+        
+        if (!body.startsWith('.')) return
+        const command = body.slice(1).trim().split(/ +/).shift().toLowerCase()
+        const args = body.trim().split(/ +/).slice(1)
+
+        const pluginFile = `${command}.js`
+        if (global.plugins[pluginFile]) {
+            try {
+                const db = JSON.parse(fs.readFileSync(dbPath))
+                await global.plugins[pluginFile].execute(conn, m, from, args, db, sender)
+                
+                db.totalCommands = (db.totalCommands || 0) + 1
+                fs.writeFileSync(dbPath, JSON.stringify(db, null, 2))
+                await conn.updateProfileStatus(`ꪶ ⌬ ꫂ | Comandi: ${db.totalCommands} | Dev: Mr. Kiwi 🥝`)
+            } catch (e) { console.error(chalk.red('[ CMD ERROR ]'), e) }
+        }
+    })
+
+    conn.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect } = update
+        if (connection === 'connecting') console.log(chalk.yellow('  ⚡ Connessione in corso...'))
+        if (connection === 'open') {
+            printBanner()
+            console.log(chalk.gray('┌──[') + chalk.red('⌬') + chalk.gray(']─[~]'))
+            console.log(chalk.gray('┃  ') + chalk.green('✓ ꪶ ⌬ ꫂ | ʙᴏᴛ ONLINE'))
+            console.log(chalk.gray('┃  ') + chalk.white('Motore: ') + chalk.red('Realvare/Baileys'))
+            console.log(chalk.gray('┃  ') + chalk.white('Plugin: ') + chalk.red(Object.keys(global.plugins).length))
+            console.log(chalk.gray('└──╼ $ ') + chalk.white('Pronto per i comandi.\n'))
+        }
+        if (connection === 'close') {
+            const reason = lastDisconnect?.error?.output?.statusCode
+            if (reason !== DisconnectReason.loggedOut) startBot()
+        }
+    })
+
+    return conn
+}
+
+startBot()
 

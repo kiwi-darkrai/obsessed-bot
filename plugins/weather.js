@@ -1,9 +1,9 @@
 const axios = require('axios');
 
-module.exports = {
-    execute: async (sock, mek, from, args) => {
+export default {
+    execute: async (conn, m, from, args) => {
         const city = args.join(" ");
-        if (!city) return sock.sendMessage(from, { text: "｢ ❓ ｣ Inserisci il nome di una città.\nEsempio: `.weather Milano`" });
+        if (!city) return conn.sendMessage(from, { text: "｢ ❓ ｣ Inserisci il nome di una città.\nEsempio: `.weather Milano`" });
 
         try {
             // URL con API Key (Assicurati che sia attiva su openweathermap.org)
@@ -34,11 +34,11 @@ module.exports = {
 ---------------------------
 _Powered by ꪶ ⌬ ꫂ | ᴍʀ. ᴋɪᴡɪ_`;
 
-            await sock.sendMessage(from, { text });
+            await conn.sendMessage(from, { text });
         } catch (error) {
             // Log dell'errore per te nel terminale, ma messaggio pulito per l'utente
             console.error("Errore Meteo:", error.response ? error.response.data : error.message);
-            sock.sendMessage(from, { text: "｢ ❌ ｣ Impossibile recuperare il meteo. Controlla il nome della città o riprova più tardi." });
+            conn.sendMessage(from, { text: "｢ ❌ ｣ Impossibile recuperare il meteo. Controlla il nome della città o riprova più tardi." });
         }
     }
 };

@@ -1,8 +1,8 @@
-module.exports = {
+export default {
     adminOnly: true,
-    execute: async (sock, mek, from) => {
-        await sock.groupSettingUpdate(from, 'not_announcement');
-        sock.sendMessage(from, { text: `｢ 🔓 ｣ **ɢʀᴏᴜᴘ_ᴏᴘᴇɴᴇᴅ**\nTutti possono scrivere.` });
+    execute: async (conn, m, from) => {
+        await conn.groupSettingUpdate(from, 'not_announcement');
+        conn.sendMessage(from, { text: `｢ 🔓 ｣ **ɢʀᴏᴜᴘ_ᴏᴘᴇɴᴇᴅ**\nTutti possono scrivere.` });
     }
 };
 

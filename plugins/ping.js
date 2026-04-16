@@ -1,5 +1,5 @@
-module.exports = {
-    execute: async (sock, mek, from) => {
+export default {
+    execute: async (conn, m, from) => {
         const timestamp = Date.now();
         const latency = Date.now() - timestamp; 
         const style = `｢ ⚡ ｣ **ꜱʏꜱᴛᴇᴍ_ꜱᴛᴀᴛᴜꜱ**
@@ -8,7 +8,7 @@ module.exports = {
 🛰️ ꜱᴇʀᴠᴇʀ: ᴛᴇʀᴍᴜx_ʟɪɴᴜx
 📡 ꜱᴛᴀᴛᴜꜱ: ᴏɴʟɪɴᴇ
 ----------------------------------------`;
-        await sock.sendMessage(from, { text: style });
+        await conn.sendMessage(from, { text: style });
     }
 };
 

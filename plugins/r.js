@@ -1,10 +1,10 @@
-module.exports = {
-    execute: async (sock, mek, from, args) => {
-        const target = mek.message.extendedTextMessage?.contextInfo?.mentionedJid[0] || 
-                       (mek.message.extendedTextMessage?.contextInfo?.quotedMessage ? mek.message.extendedTextMessage.contextInfo.participant : null);
-        if (!target) return sock.sendMessage(from, { text: "｢ ⚠ ｣ Tagga o rispondi a un utente." });
-        await sock.groupParticipantsUpdate(from, [target], "demote");
-        sock.sendMessage(from, { text: `｢ 🛡️ ｣ Privilegi admin rimossi.` });
+export default {
+    execute: async (conn, m, from, args) => {
+        const target = m.message.extendedTextMessage?.contextInfo?.mentionedJid[0] || 
+                       (m.message.extendedTextMessage?.contextInfo?.quotedMessage ? m.message.extendedTextMessage.contextInfo.participant : null);
+        if (!target) return conn.sendMessage(from, { text: "｢ ⚠ ｣ Tagga o rispondi a un utente." });
+        await conn.groupParticipantsUpdate(from, [target], "demote");
+        conn.sendMessage(from, { text: `｢ 🛡️ ｣ Privilegi admin rimossi.` });
     }
 };
 

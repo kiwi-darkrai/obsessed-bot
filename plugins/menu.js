@@ -1,5 +1,5 @@
-module.exports = {
-    execute: async (sock, mek, from, args, db, sender) => {
+export default {
+    execute: async (conn, m, from, args, db, sender) => {
         const time = new Date().toLocaleTimeString();
         const totalCmds = db.totalCommands || 0;
 
@@ -43,10 +43,10 @@ module.exports = {
 _Powered by ꪶ ⌬ ꫂ | ᴅᴇᴠ: ᴍʀ. ᴋɪᴡɪ 🥝_
 `;
 
-        await sock.sendMessage(from, { 
+        await conn.sendMessage(from, { 
             text: menuText, 
             mentions: [sender] 
-        }, { quoted: mek });
+        }, { quoted: m });
     }
 };
 

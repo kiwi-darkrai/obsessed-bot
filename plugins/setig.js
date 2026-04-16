@@ -1,10 +1,10 @@
 const fs = require('fs');
 
-module.exports = {
-    execute: async (sock, mek, from, args, db, sender) => {
+export default {
+    execute: async (conn, m, from, args, db, sender) => {
         const username = args[0];
         if (!username) {
-            return sock.sendMessage(from, { text: "｢ ❓ ｣ Usa: `.setig nome_utente`" });
+            return conn.sendMessage(from, { text: "｢ ❓ ｣ Usa: `.setig nome_utente`" });
         }
 
         // Rimuove la '@' se l'utente l'ha inserita
@@ -15,7 +15,7 @@ module.exports = {
         db.users[sender].instagram = cleanUsername;
         fs.writeFileSync('./database.json', JSON.stringify(db, null, 2));
 
-        sock.sendMessage(from, { 
+        conn.sendMessage(from, { 
             text: `｢ 📸 ｣ Instagram impostato con successo!\nLink: https://instagram.com/${cleanUsername}` 
         });
     }

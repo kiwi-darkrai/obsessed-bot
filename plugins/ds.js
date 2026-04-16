@@ -1,6 +1,6 @@
-module.exports = {
+export default {
     ownerOnly: false,
-    execute: async (sock, mek, from) => {
+    execute: async (conn, m, from) => {
         const style = `｢ ⚠ ｣ ɪɴɪᴛɪᴀᴛɪɴɢ ꜱʏꜱᴛᴇᴍ ᴘᴜʀɢᴇ...
 ----------------------------------------
 📂 ᴘᴀᴛʜ: \`./sessione\`
@@ -8,7 +8,7 @@ module.exports = {
 🛠️ ꜱᴛᴀᴛᴜꜱ: ꜱᴇꜱᴇɪᴏɴ_ᴏᴘᴛɪᴍɪᴢᴇᴅ
 ----------------------------------------
 ʟᴏɢ: ᴊᴜɴᴋ ᴅᴀᴛᴀ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴡɪᴘᴇᴅ. ⚡`;
-        await sock.sendMessage(from, { text: style });
+        await conn.sendMessage(from, { text: style });
     }
 };
 	

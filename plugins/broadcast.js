@@ -1,14 +1,14 @@
-module.exports = {
+export default {
     ownerOnly: true,
-    execute: async (sock, mek, from, args) => {
-        const groups = Object.keys(await sock.groupFetchAllParticipating());
+    execute: async (conn, m, from, args) => {
+        const groups = Object.keys(await conn.groupFetchAllParticipating());
         const msg = args.join(" ");
-        if (!msg) return sock.sendMessage(from, { text: "Inserisci il messaggio da trasmettere." });
+        if (!msg) return conn.sendMessage(from, { text: "Inserisci il messaggio da trasmettere." });
         
         for (let i of groups) {
-            await sock.sendMessage(i, { text: `｢ 📡 ｣ **ʙʀᴏᴀᴅᴄᴀꜱᴛ_ᴍᴇꜱꜱᴀɢᴇ**\n\n${msg}` });
+            await conn.sendMessage(i, { text: `｢ 📡 ｣ **ʙʀᴏᴀᴅᴄᴀꜱᴛ_ᴍᴇꜱꜱᴀɢᴇ**\n\n${msg}` });
         }
-        sock.sendMessage(from, { text: "｢ ✅ ｣ Messaggio inviato a tutti i gruppi." });
+        conn.sendMessage(from, { text: "｢ ✅ ｣ Messaggio inviato a tutti i gruppi." });
     }
 };
 

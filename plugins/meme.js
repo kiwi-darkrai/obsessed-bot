@@ -1,7 +1,7 @@
-module.exports = {
-    execute: async (sock, mek, from) => {
+export default {
+    execute: async (conn, m, from) => {
         const res = await fetch('https://meme-api.com/gimme').then(r => r.json());
-        await sock.sendMessage(from, { image: { url: res.url }, caption: `｢ 🤣 ｣ **${res.title}**` });
+        await conn.sendMessage(from, { image: { url: res.url }, caption: `｢ 🤣 ｣ **${res.title}**` });
     }
 };
 

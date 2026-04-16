@@ -1,7 +1,7 @@
-module.exports = {
+export default {
     ownerOnly: true,
-    execute: async (sock, mek, from) => {
-        await sock.sendMessage(from, { text: "｢ 🔴 ｣ **ꜱʏꜱᴛᴇᴍ_ᴏꜰꜰʟɪɴᴇ**\nSpegnimento in corso..." });
+    execute: async (conn, m, from) => {
+        await conn.sendMessage(from, { text: "｢ 🔴 ｣ **ꜱʏꜱᴛᴇᴍ_ᴏꜰꜰʟɪɴᴇ**\nSpegnimento in corso..." });
         process.exit();
     }
 };
