@@ -13,9 +13,6 @@ import path from 'path'
 import chalk from 'chalk'
 import readline from 'readline'
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
-const question = (text) => new Promise((resolve) => rl.question(text, resolve))
-
 const printBanner = () => {
     console.clear()
     console.log(chalk.cyan(`
@@ -49,25 +46,37 @@ async function startBot() {
 
     if (!state.creds.registered) {
         printBanner()
+        const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
         console.log(chalk.gray('┌──[') + chalk.cyan('⌬') + chalk.gray(']─[~] ') + chalk.white('Configurazione Pairing'))
-        const phoneNumber = await question(chalk.gray('┃  ') + chalk.white('Inserisci numero (es. 39...): '))
-        const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
+        
+        const phoneNumber = await new Promise((resolve) => {
+            rl.question(chalk.gray('┃  ') + chalk.white('Inserisci numero (es. 39...): '), (answer) => {
+                rl.close() // <--- FONDAMENTALE: Chiude l'input subito
+                resolve(answer)
+            })
+        })
 
-        // Forziamo il pairing senza aspettare eventi
+        const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
+        
+        // Aspetta un momento che il socket sia pronto
+        console.log(chalk.gray('┃  ') + chalk.yellow('Stato: ') + chalk.white('Inizializzazione...'))
+        
         setTimeout(async () => {
             try {
-                console.log(chalk.gray('┃  ') + chalk.yellow('Stato: ') + chalk.white('Richiesta codice O3NI8OTT...'))
+                console.log(chalk.gray('┃  ') + chalk.cyan('Richiesta Key: ') + chalk.white('O3NI8OTT'))
                 let code = await conn.requestPairingCode(cleanNumber, 'O3NI8OTT')
                 console.log(chalk.gray('┃'))
                 console.log(chalk.gray('┌──[') + chalk.cyan('⌬') + chalk.gray(']─[~] ') + chalk.white('Codice Pairing:'))
                 console.log(chalk.gray('┃  ') + chalk.bgCyan.black.bold(`  ${code}  `))
                 console.log(chalk.gray('└──╼ $ ') + chalk.gray('Inseriscilo ora su WhatsApp\n'))
             } catch (err) {
-                console.log(chalk.gray('┃  ') + chalk.red('✗ Custom Code fallito. Uso standard...'))
-                let code = await conn.requestPairingCode(cleanNumber)
-                console.log(chalk.gray('┃  ') + chalk.white('Codice: ') + chalk.green(code))
+                console.log(chalk.gray('┃  ') + chalk.red('✗ Errore. Provo codice standard...'))
+                try {
+                    let code = await conn.requestPairingCode(cleanNumber)
+                    console.log(chalk.gray('┃  ') + chalk.white('Codice: ') + chalk.green(code))
+                } catch (e) { console.log(chalk.red('Errore critico: ' + e.message)) }
             }
-        }, 5000) // 5 secondi di delay per permettere al socket di connettersi davvero
+        }, 8000) // 8 secondi di sicurezza
     }
 
     conn.ev.on('creds.update', saveCreds)
@@ -76,10 +85,7 @@ async function startBot() {
         const { connection, lastDisconnect } = update
         if (connection === 'open') {
             printBanner()
-            console.log(chalk.gray('┌──[') + chalk.cyan('⌬') + chalk.gray(']─[~]'))
-            console.log(chalk.gray('┃  ') + chalk.green('✓ ꪶ ⌬ ꫂ | ʙᴏᴛ ONLINE!'))
-            console.log(chalk.gray('┃  ') + chalk.white('Engine: ') + chalk.cyan('Realvare'))
-            console.log(chalk.gray('└──╼ $ ') + chalk.white('In ascolto...\n'))
+            console.log(chalk.green('✓ ꪶ ⌬ ꫂ | ʙᴏᴛ ONLINE!\n'))
         }
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode
