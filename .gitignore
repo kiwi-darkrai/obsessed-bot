@@ -1,3 +1,5 @@
-node_modules/
-sessione/
+node_modules
+sessione
 database.json
+.npm
+package-lock.json
