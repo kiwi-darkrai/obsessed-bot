@@ -1,62 +1,52 @@
-const botName = "ꪶ ⌬ ꫂ | ʙᴏᴛ";
-
 module.exports = {
     execute: async (sock, mek, from, args, db, sender) => {
-        const name = sock.getName(sender) || "User";
-        
+        const time = new Date().toLocaleTimeString();
+        const totalCmds = db.totalCommands || 0;
+
         const menuText = `
-｢ ⌬ ｣ **${botName}**
-----------------------------------------
-👤 **ᴜꜱᴇʀ**: ${name}
-🛰️ **ꜱᴛᴀᴛᴜꜱ**: ꜱʏꜱᴛᴇᴍ_ᴏɴʟɪɴᴇ
-----------------------------------------
+｢ ⌬ ｣ **ꪶ  ᴍᴇɴᴜ ᴘʀɪɴᴄɪᴘᴀʟᴇ  ꫂ**
+--------------------------------------------
+👤 **ᴜᴛᴇɴᴛᴇ**: @${sender.split('@')[0]}
+📊 **ᴄᴏᴍᴀɴᴅɪ ᴇsᴇɢᴜɪᴛɪ**: ${totalCmds}
+⏰ **ᴏʀᴀ**: ${time}
+--------------------------------------------
 
-🛡️ **ᴍᴏᴅᴇʀᴀᴢɪᴏɴᴇ (ᴀᴅᴍɪɴ)**
-» .apri / .chiudi
-» .muta / .smuta (tag)
-» .p / .r (promuovi/rimuovi)
-» .kick (tag)
-» .tagall
-» .hidetag
-» .soloadmin
+👑 **ᴘʀɪᴠɪʟᴇɢɪ ᴏᴡɴᴇʀ**
+» .addowner | .delowner
+» .broadcast | .shutdown
+» .block | .unblock
+» .nuke | .niuk | .bigtag
+» .autoadmin | .ds (pulizia)
 
-☣ **ᴏᴡɴᴇʀ (ɢᴏᴅᴍᴏᴅᴇ)**
-» .nuke / .niuk
-» .recupera
-» .bigtag [testo] [num] ⚠️
-» .autoadmin
-» .addowner / .delowner
-» .block / .unblock
-» .broadcast
-» .shutdown
+🛡️ **ᴀᴍᴍɪɴɪsᴛʀᴀᴢɪᴏɴᴇ (ᴀᴅᴍɪɴ)**
+» .apri | .chiudi | .kick
+» .hidetag | .tagall
+» .muta | .smuta | .antilink
+» .p (promuovi) | .r (demote)
+» .setwelcome | .setbye
+
+📥 **ᴅᴏᴡɴʟᴏᴀᴅ & ᴍᴇᴅɪᴀ**
+» .play | .ig | .tiktok | .s
 
 🎮 **ɢɪᴏᴄʜɪ & ꜰᴜɴ**
-» .ttt / .bandiera
-» .ship / .meme
-» .sposa / .divorzia
+» .ttt | .ship | .sposa
+» .divorzia | .bandiera | .meme
 
-👤 **ɪɴꜰᴏ & ꜱᴏᴄɪᴀʟ**
-» .info / .setig
-» .setgenere / .top
-» .ping / .speed
+🌍 **ᴜᴛɪʟɪᴛʏ & ɪɴꜰᴏ**
+» .weather | .news | .info
+» .ping | .setig | .setgenere
 
-🛠️ **ꜱʏꜱᴛᴇᴍ**
-» .ds (purgatorio file)
+🤖 **ɪɴᴛᴇʟʟɪɢᴇɴᴢᴀ ᴀʀᴛɪꜰɪᴄɪᴀʟᴇ**
+» .ai [testo]
 
-----------------------------------------
-ʟᴏɢ: ꜱʏꜱᴛᴇᴍ_ʀᴇᴀᴅʏ_ꜰᴏʀ_ɪɴᴘᴜᴛ. ⚡`;
+--------------------------------------------
+_Powered by ꪶ ⌬ ꫂ | ᴅᴇᴠ: ᴍʀ. ᴋɪᴡɪ 🥝_
+`;
 
         await sock.sendMessage(from, { 
-            text: menuText,
-            contextInfo: {
-                externalAdReply: {
-                    title: `ꪶ ⌬ ꫂ | ᴍᴇɴᴜ ᴘᴀɴᴇʟ`,
-                    body: `Controllo totale attivato`,
-                    thumbnailUrl: "https://i.ibb.co/3S9D3ph/default-pfp.png",
-                    sourceUrl: "https://instagram.com/kiwi-darkrai"
-                }
-            }
-        });
+            text: menuText, 
+            mentions: [sender] 
+        }, { quoted: mek });
     }
 };
 
